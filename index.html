@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ColdStart GAN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400..700&display=swap">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">
+      <canvas id="brandMark" width="40" height="40" aria-hidden="true"></canvas>
+      <div>
+        <div class="brand-name">ColdStart GAN</div>
+        <div class="brand-sub">Synthetic interaction generator for cold-start recommenders</div>
+      </div>
+    </div>
+    <label class="domain-pick" for="domainSelect">
+      <span>Platform</span>
+      <select id="domainSelect"></select>
+    </label>
+  </header>
+
+  <nav class="rail" aria-label="Sections">
+    <button class="rail-btn is-active" data-go="overview"><span class="rail-n">1</span><span><b>The problem</b><small>Why cold start hurts</small></span></button>
+    <button class="rail-btn" data-go="lab"><span class="rail-n">2</span><span><b>Train the GAN</b><small>Generator vs discriminator</small></span></button>
+    <button class="rail-btn" data-go="play"><span class="rail-n">3</span><span><b>Be a new user</b><small>Live recommendations</small></span></button>
+    <button class="rail-btn" data-go="eval"><span class="rail-n">4</span><span><b>Evaluate</b><small>300 cold-start users</small></span></button>
+    <button class="rail-btn" data-go="arch"><span class="rail-n">5</span><span><b>Architecture</b><small>Pipeline and roadmap</small></span></button>
+    <div class="rail-status" id="railStatus">
+      <div class="rs-row"><span class="dot" id="rsDot"></span><span id="rsText">Generator warming up</span></div>
+      <canvas id="rsSpark" width="200" height="36" aria-hidden="true"></canvas>
+      <div class="rs-legend"><i class="k-d"></i>D loss <i class="k-g"></i>G loss</div>
+    </div>
+  </nav>
+
+  <main id="main">
+    <!-- 1 · OVERVIEW -->
+    <section class="view is-active" data-view="overview" aria-labelledby="h-ov">
+      <div class="hero">
+        <div class="hero-copy">
+          <h1 id="h-ov">Useful recommendations before the data exists.</h1>
+          <p class="lede">A new <span data-word="label-lower">movie streaming</span> platform has <b class="c-real">20 real users</b>. That isn't enough history to recommend anything well. A GAN learns how those users behave and writes <b class="c-synth">thousands of synthetic users</b> that look like them, so the recommender has something to learn from on day one.</p>
+          <div class="cta-row">
+            <button class="btn btn-primary" data-go="lab">Train the GAN</button>
+            <button class="btn btn-ghost" data-go="play">Try it as a new user</button>
+          </div>
+          <p class="team">Ananya Sharma, Rohan Verma, Meera Nair <span class="sep">/</span> Recommender Systems course project</p>
+        </div>
+        <figure class="hero-fig">
+          <div class="fig-head">
+            <span>Interaction matrix</span>
+            <span class="fig-key"><i class="sw-real"></i>real <i class="sw-synth"></i>synthetic</span>
+          </div>
+          <canvas id="heroMatrix" aria-label="Interaction matrix with real and synthetic rows"></canvas>
+          <div class="hero-slider">
+            <label for="heroN">Synthetic users <output id="heroNOut">5,000</output></label>
+            <input type="range" id="heroN" min="0" max="5000" step="50" value="5000">
+          </div>
+          <div class="hero-stats">
+            <div class="hs"><span class="hs-k">Precision@5</span><span class="hs-v"><b class="c-real" id="hsRealP">—</b><span class="arrow">to</span><b class="c-synth" id="hsAugP">—</b></span></div>
+            <div class="hs"><span class="hs-k">New releases surfaced</span><span class="hs-v"><b class="c-real" id="hsRealN">—</b><span class="arrow">to</span><b class="c-synth" id="hsAugN">—</b></span></div>
+            <div class="hs"><span class="hs-k">Catalog reached</span><span class="hs-v"><b class="c-real" id="hsRealC">—</b><span class="arrow">to</span><b class="c-synth" id="hsAugC">—</b></span></div>
+          </div>
+          <figcaption>Real data only versus real plus synthetic, measured on 300 simulated new users. Numbers update as the GAN trains.</figcaption>
+        </figure>
+      </div>
+
+      <h2 class="sec-h">Three ways a recommender starts cold</h2>
+      <div class="cold-grid">
+        <article class="cold">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+          <h3>New user</h3>
+          <p class="cold-p">No history, so the first screen is a guess.</p>
+          <p class="cold-fix">Two clicks are enough: the model matches them against thousands of synthetic users with similar taste.</p>
+          <button class="link" data-go="play">Try it</button>
+        </article>
+        <article class="cold">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M9 4v16"/></svg>
+          <h3>New item</h3>
+          <p class="cold-p">No ratings, so collaborative filtering never shows it.</p>
+          <p class="cold-fix">The generator writes interactions through item attributes, so a new release gets synthetic history from its genre.</p>
+          <button class="link" data-go="eval">See the numbers</button>
+        </article>
+        <article class="cold">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>
+          <h3>New platform</h3>
+          <p class="cold-p">A few users, nowhere near enough for a model to learn from.</p>
+          <p class="cold-fix">20 real users become 20 + 5,000. Real rows stay in the training set; synthetic rows fill the gaps.</p>
+          <button class="link" data-go="lab">Watch it train</button>
+        </article>
+      </div>
+
+      <h2 class="sec-h">How existing approaches fall short</h2>
+      <div class="table-wrap">
+        <table class="cmp">
+          <thead><tr><th>Method</th><th>What goes wrong at cold start</th><th>Personalised</th><th>Works with 20 users</th></tr></thead>
+          <tbody>
+            <tr><td>Popularity-based</td><td>Everyone gets the same list</td><td><span class="pill no">No</span></td><td><span class="pill yes">Yes</span></td></tr>
+            <tr><td>Content-based</td><td>Only recommends more of the same attributes</td><td><span class="pill mid">Limited</span></td><td><span class="pill yes">Yes</span></td></tr>
+            <tr><td>Hybrid systems</td><td>Still need enough interaction data to train</td><td><span class="pill yes">Yes</span></td><td><span class="pill no">No</span></td></tr>
+            <tr class="ours"><td>GAN augmentation (ours)</td><td>Generates realistic interactions before real data arrives</td><td><span class="pill yes">Yes</span></td><td><span class="pill yes">Yes</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 2 · LAB -->
+    <section class="view" data-view="lab" aria-labelledby="h-lab">
+      <div class="view-head">
+        <div>
+          <h1 id="h-lab">Train the GAN</h1>
+          <p class="lede">The generator writes fake users. The discriminator tries to tell them from the 20 real ones. Each step, both get better, until the synthetic cloud covers the same tastes as the real users.</p>
+        </div>
+      </div>
+
+      <div class="toolbar" role="group" aria-label="Training controls">
+        <button class="btn btn-primary" id="trainBtn">Pause training</button>
+        <button class="btn btn-ghost" id="stepBtn">Step ×50</button>
+        <button class="btn btn-ghost" id="resetBtn">Reset weights</button>
+        <label class="ctl" for="lrSel">Learning rate
+          <select id="lrSel"><option value="0.001">0.001</option><option value="0.003" selected>0.003</option><option value="0.01">0.01</option></select>
+        </label>
+        <label class="ctl" for="speedSel">Steps per frame
+          <select id="speedSel"><option value="2">2 (slow)</option><option value="8" selected>8</option><option value="30">30 (fast)</option></select>
+        </label>
+        <label class="toggle" for="biasTgl"><input type="checkbox" id="biasTgl"><span class="tg"></span>Biased seed data</label>
+      </div>
+
+      <div class="lab-grid">
+        <figure class="panel duel-panel">
+          <div class="fig-head">
+            <span>Taste space</span>
+            <span class="fig-key"><i class="sw-real"></i>real user <span class="grad-key" aria-hidden="true"></span>synthetic, by D's score: flagged fake to looks real</span>
+          </div>
+          <div class="duel-wrap"><canvas id="duel" aria-label="Real and synthetic users plotted by category taste"></canvas></div>
+          <figcaption>Each dot is a user, placed by how their interactions split across the four categories in the corners.</figcaption>
+        </figure>
+
+        <div class="lab-side">
+          <div class="stat-row">
+            <div class="stat"><span>Step</span><b id="stEpoch">0</b></div>
+            <div class="stat"><span>D loss</span><b class="c-disc" id="stD">—</b></div>
+            <div class="stat"><span>G loss</span><b class="c-synth" id="stG">—</b></div>
+            <div class="stat"><span>Item rate error</span><b id="stMae">—</b></div>
+          </div>
+          <figure class="panel">
+            <div class="fig-head"><span>Losses</span><span class="fig-key"><i class="sw-disc"></i>discriminator <i class="sw-synth"></i>generator</span></div>
+            <canvas id="lossChart" class="chart" aria-label="Loss curves"></canvas>
+          </figure>
+          <figure class="panel">
+            <div class="fig-head"><span>Discriminator's verdict</span><span class="fig-key"><i class="sw-real"></i>D(real) <i class="sw-synth"></i>D(synthetic)</span></div>
+            <canvas id="dChart" class="chart" aria-label="Discriminator output for real and synthetic"></canvas>
+            <figcaption>When both lines meet near 0.5, the discriminator can no longer tell them apart.</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="duo">
+        <article class="agent gen">
+          <h3>Generator</h3>
+          <p>Takes 8 random numbers, turns them into a taste profile over categories, and scores every item through its attributes. That's why it can write history for <b>new releases</b> no real user has touched yet.</p>
+          <p class="arch-line">z ∈ ℝ⁸ → 32 ReLU → taste ∈ ℝ⁴ → σ(taste · attributes + bias)</p>
+        </article>
+        <div class="vs">vs</div>
+        <article class="agent disc">
+          <h3>Discriminator</h3>
+          <p>Looks at an interaction row and outputs the probability that it came from a real user. Its mistakes are the generator's training signal.</p>
+          <p class="arch-line">row ∈ {0,1}²⁰ → 32 LeakyReLU → σ → P(real)</p>
+        </article>
+      </div>
+
+      <div class="matrix-grid">
+        <figure class="panel">
+          <div class="fig-head"><span><i class="sw-real"></i> 20 real users</span><span class="muted">New releases are empty</span></div>
+          <canvas id="mxReal" class="mx" aria-label="Real interaction matrix"></canvas>
+        </figure>
+        <figure class="panel">
+          <div class="fig-head"><span><i class="sw-synth"></i> 20 synthetic users</span><button class="link" id="resampleBtn">Resample</button></div>
+          <canvas id="mxSynth" class="mx" aria-label="Synthetic interaction matrix"></canvas>
+        </figure>
+        <figure class="panel">
+          <div class="fig-head"><span>Category share</span><span class="fig-key"><i class="sw-real"></i>real <i class="sw-synth"></i>synthetic</span></div>
+          <div id="catBars" class="catbars"></div>
+          <p class="note" id="biasNote">Turn on <b>Biased seed data</b> to see a known risk: if 80% of the real users share one taste, the synthetic users copy that skew.</p>
+        </figure>
+      </div>
+    </section>
+
+    <!-- 3 · PLAYGROUND -->
+    <section class="view" data-view="play" aria-labelledby="h-play">
+      <div class="view-head">
+        <div>
+          <h1 id="h-play">Be a new user</h1>
+          <p class="lede">Pick a couple of <span data-word="unit">titles</span> you like. Three recommenders answer side by side. Or load a simulated user whose real taste is known, and check who gets it right.</p>
+        </div>
+      </div>
+      <div class="play-grid">
+        <div class="picker panel">
+          <div class="picker-head">
+            <span id="pickCount">Nothing picked yet</span>
+            <div class="picker-actions">
+              <button class="btn btn-small btn-primary" id="probeBtn">Load a simulated user</button>
+              <button class="btn btn-small btn-ghost" id="clearBtn">Clear</button>
+            </div>
+          </div>
+          <div id="probeInfo" class="probe" hidden></div>
+          <div id="itemGrid" class="item-grid"></div>
+        </div>
+        <div class="results">
+          <div class="res-ctl panel">
+            <label for="playN">Synthetic users in training <output id="playNOut">2,000</output></label>
+            <input type="range" id="playN" min="0" max="5000" step="100" value="2000">
+          </div>
+          <div class="res-cols">
+            <div class="res-col" data-m="popularity"><h3>Popularity</h3><p class="res-sub">Same list for everyone</p><ol id="resPop"></ol><div class="res-foot" id="footPop"></div></div>
+            <div class="res-col" data-m="real"><h3>Real data only</h3><p class="res-sub">Item similarity from 20 users</p><ol id="resReal"></ol><div class="res-foot" id="footReal"></div></div>
+            <div class="res-col ours" data-m="augmented"><h3>Real + GAN</h3><p class="res-sub" id="augSub">20 real + 2,000 synthetic users</p><ol id="resAug"></ol><div class="res-foot" id="footAug"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 · EVALUATION -->
+    <section class="view" data-view="eval" aria-labelledby="h-eval">
+      <div class="view-head">
+        <div>
+          <h1 id="h-eval">Evaluate</h1>
+          <p class="lede">Because the world here is simulated, every test user's true taste is known. Each of 300 new users reveals 2 likes; we score the top 5 recommendations against the likes they kept hidden.</p>
+        </div>
+        <button class="btn btn-primary" id="benchBtn">Run benchmark</button>
+      </div>
+      <p class="bench-meta" id="benchMeta">Runs against the generator as it is right now.</p>
+      <div class="metric-grid" id="metricGrid"></div>
+      <div class="eval-grid">
+        <figure class="panel">
+          <div class="fig-head"><span>Precision@5 by number of synthetic users</span><span class="fig-key"><i class="sw-pop"></i>popularity <i class="sw-real"></i>real only <i class="sw-synth"></i>real + GAN</span></div>
+          <canvas id="curveChart" class="chart tall" aria-label="Precision by number of synthetic users"></canvas>
+        </figure>
+        <div class="panel reading">
+          <h3>Reading the results</h3>
+          <ul id="readList"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 · ARCHITECTURE -->
+    <section class="view" data-view="arch" aria-labelledby="h-arch">
+      <div class="view-head">
+        <div>
+          <h1 id="h-arch">Architecture</h1>
+          <p class="lede">Seven stages from raw interactions to a top-N list. Select a stage to see what it's doing in this demo right now.</p>
+        </div>
+      </div>
+      <div class="pipe-wrap">
+        <canvas id="pipeFlow" aria-hidden="true"></canvas>
+        <ol class="pipe" id="pipe"></ol>
+      </div>
+      <div class="panel stage-detail" id="stageDetail" aria-live="polite"></div>
+
+      <div class="two-col">
+        <div class="panel">
+          <h3>Open problems</h3>
+          <ul class="challenges" id="challenges"></ul>
+        </div>
+        <div class="panel">
+          <h3>Roadmap</h3>
+          <ol class="roadmap">
+            <li class="now"><b>Now</b>GAN-generated interactions</li>
+            <li><b>Next</b>Graph neural networks over user-item graphs</li>
+            <li><b>Next</b>Federated learning across platforms</li>
+            <li><b>Later</b>Privacy-preserving recommendation</li>
+            <li><b>Later</b>Real-time synthetic generation</li>
+            <li><b>Later</b>Multimodal recommendation</li>
+          </ol>
+        </div>
+      </div>
+      <blockquote class="closing">We don't replace real user data. We help recommendation systems become useful before enough real data exists.</blockquote>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/catalog.js"></script>
+<script src="/engine.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

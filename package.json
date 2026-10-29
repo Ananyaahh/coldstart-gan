@@ -1,0 +1,16 @@
+{
+  "name": "coldstart-gan",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GAN-augmented synthetic interaction generator for cold-start recommender systems",
+  "scripts": {
+    "dev": "vite --open",
+    "build": "vite build",
+    "preview": "vite preview",
+    "py:setup": "pip install -r ml/requirements.txt",
+    "py:run": "python ml/gan_coldstart.py --demo"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}
